@@ -192,27 +192,15 @@ public class NFATests {
         HashSet<State> nonAcceptStates = new HashSet<State>(Arrays.asList(s0, s1, s2, s3)); 
         stateGroups.add(acceptStates);
         stateGroups.add(nonAcceptStates);
-        myNFA.kEquivalenceHelper(stateGroups);
-               
+        
+        var expectedAnswer = new HashSet<HashSet<State>>();
+        expectedAnswer.add(new HashSet<State>(Arrays.asList(s4)));
+        expectedAnswer.add(new HashSet<State>(Arrays.asList(s0)));
+        expectedAnswer.add(new HashSet<State>(Arrays.asList(s3, s1, s2)));
+         
+        assertEquals(myNFA.kEquivalenceHelper(stateGroups), expectedAnswer);               
     }
     
-//    
-//    @Test 
-//    public void testMinize_1() {
-//        NFA myNFA = new NFA(new HashSet<>(Arrays.asList('a', 'b')), new HashMap<State, HashMap<Character, HashSet<State>>>());
-//        NFA.State s1 = new NFA.State("s1", true);
-//        NFA.State s2 = new NFA.State("s2", false);
-//        
-//        myNFA.addState(s1);
-//        myNFA.addState(s2);
-//        
-//        myNFA.addTransition(s1, new NFA.Transition('a', s2));
-//        myNFA.addTransition(s1, new NFA.Transition('b', s2));
-//        myNFA.addTransition(s2, new NFA.Transition('a', s2));
-//        myNFA.addTransition(s2, new NFA.Transition('b', s1));
-//                
-//        assertTrue(myNFA.isDFA()); 
-//    }
     
 }
 

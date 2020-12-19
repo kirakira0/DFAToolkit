@@ -6,6 +6,9 @@
 package main.nfa;
 
 import java.util.HashSet;
+
+import main.nfa.NFA.State;
+
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -86,27 +89,29 @@ public class NFA {
     /**
      * 
      */
-//    public NFA minimize() {
-    public void minimize() {
-
+    public NFA minimize() {
         // K equivalence 
-        HashSet<HashSet<State>> stateGroups = new HashSet<HashSet<State>>();
-        HashSet<State> acceptStates = new HashSet<State>();
-        HashSet<State> nonAcceptStates = new HashSet<State>();
+        var stateGroups = new HashSet<HashSet<State>>();
+        var acceptStates = new HashSet<State>();
+        var nonAcceptStates = new HashSet<State>();
         for (State state: this.data.keySet()) {
-            if (state.accept)  {
-                acceptStates.add(state);
-            } else {
-                nonAcceptStates.add(state);
-            }
+            if (state.accept)  {acceptStates.add(state);} 
+            else {nonAcceptStates.add(state);}
         }
         stateGroups.add(acceptStates);
         stateGroups.add(nonAcceptStates);
-        System.out.println("------------------->>>"); 
-        this.kEquivalenceHelper(stateGroups); 
+        
+        var sortedGroups = this.kEquivalenceHelper(stateGroups); 
+        
+        NFA DFA = new NFA(this.alphabet, new HashMap<State, HashMap<Character, HashSet<State>>>());
+        for (var group: stateGroups) {
+            
+        }
+
+        return DFA;      
 
     }
-    
+
     
     /**
      * Sort the states of the DFA into groups using the k equivalence method. 
@@ -136,7 +141,6 @@ public class NFA {
         // this.printStateGroup(newGroups);
         return stateGroups.equals(newGroups) ? newGroups : this.kEquivalenceHelper(newGroups);       
     }
-    
     
     /**
      * 
