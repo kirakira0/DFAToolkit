@@ -1,4 +1,4 @@
-# DFAMinimizer
+# DFA Toolkit
 
 This project describes an NFA class which contains several useful methods for working with NFAs, including a method that determines whether or not an NFA is a DFA, and a method capable of minimizing DFAs using the K-Equivalence Method. The NFA class also includes a toString() method which prints out a visual representation of the states and transitions in a given NFA. 
 
