@@ -122,44 +122,15 @@ public class NFA {
     public NFA minimize() {
         if (!this.isDFA()) {
             throw new IllegalArgumentException("Cannot minimize NFA. Try converting to DFA first.");
-        }
-        
-        var sortedGroups = this.kEquivalence(this.getK0()); 
-        this.printStateGroup(sortedGroups);
-        
+        }       
+        var sortedGroups = this.kEquivalence(this.getK0());
+        var redirect = this.getRedirect(sortedGroups);       
         NFA DFA = new NFA(this.getAlphabet(), new HashMap<State, HashMap<Character, HashSet<State>>>());
-        var redirect = new HashMap<State, State>();
-        for (var group: sortedGroups) {
-            // If the original state was untouched, it can simply be added
-            //  into the minimized DFA.
-            if (group.size() == 1) {
-                State state = group.toArray(new State[1])[0];
-                redirect.put(state, state);              
-            }
-            // Otherwise, we must make a new state. 
-            else {
-                String aggStateName = "";
-                boolean aggStateAccepted = false;
-                for (var state: group) {
-                    aggStateName += state.getName();
-                    if (state.accept) {aggStateAccepted = true;}
-                }
-                var aggState = new State(aggStateName, aggStateAccepted);
-                // Now make all states in this group redirect to the aggregate state.
-                for (var state: group) {
-                    redirect.put(state, aggState);
-                }
-            }
-        }
-        DFA.toString("DFA");
-
-        
         // Build a minimized DFA based on data from the original DFA and the 
         //      state redirects. 
         for (var state: this.getData().keySet()) { // Iterate through original DFA.
             State stateToAdd = redirect.get(state);
-            DFA.addState(stateToAdd);
-            
+            DFA.addState(stateToAdd);          
             // Now add the transitions
             for (var symbol: this.getData().get(state).keySet()) {
                 // original transition is 
@@ -168,41 +139,8 @@ public class NFA {
                 DFA.addTransition(stateToAdd, new Transition(symbol, newDest));
             }
         }
-
         return DFA;      
-
-    }
-    
-    
-    /**
-     * 
-     * @param state
-     * @param group
-     * @return
-     */
-    private boolean stateExits(State state, HashSet<State> group) {
-        for (Character symbol: this.getData().get(state).keySet()) {
-            for (State destination: this.getData().get(state).get(symbol)) {
-                if (!group.contains(destination) && group.size() > 1) {                                                        
-                    return true;
-                }
-            }            
-        }
-        return false;
-    }
-    
-
-    
-    /**
-     * 
-     */
-    private String transitionSetToString(HashSet<State> states) {
-        String result = ""; 
-        for (State state: states) {
-            result += " " + state.getName();           
-        }
-        return result;
-    } 
+    }     
     
     // General helper methods
     // ------------------------------------------------------------------------
@@ -212,15 +150,26 @@ public class NFA {
      * console.
      */
     public String toString(String title) {
-        String result = "----------------" + title + "-------------------";
+        String result = "--------" + title + "-----------";
         for (State state: this.getData().keySet()) {
-            System.out.println();
             result += "\n" + state.getName() + "\t"; 
             for (Character symbol: this.getData().get(state).keySet()) {
                 result += "[" + symbol + ":" + this.transitionSetToString(this.getData().get(state).get(symbol)) + "]";
             }   
         }        
         result += "\n" + "--------------------------------------";
+        return result;
+    }
+    
+    /**
+     * Returns a string representation of a HashSet of states. Useful
+     * for debugging. 
+     */
+    private String transitionSetToString(HashSet<State> states) {
+        String result = ""; 
+        for (State state: states) {
+            result += " " + state.getName();           
+        }
         return result;
     }
     
@@ -283,7 +232,6 @@ public class NFA {
      * @return
      */
     private HashSet<HashSet<State>> getK0() {
-        // K equivalence 
         var stateGroups = new HashSet<HashSet<State>>();
         var acceptStates = new HashSet<State>();
         var nonAcceptStates = new HashSet<State>();
@@ -294,6 +242,61 @@ public class NFA {
         stateGroups.add(acceptStates);
         stateGroups.add(nonAcceptStates);
         return stateGroups;
+    }
+
+    /**
+     * Helper method that determines if a state "exits" its current
+     * k-equivalence group, meaning the state contains a transition
+     * whose destination is not in the same group as the state.
+     * @param state The state to examine.
+     * @param group The group the state exists in.
+     * @return
+     */
+    private boolean stateExits(State state, HashSet<State> group) {
+        for (Character symbol: this.getData().get(state).keySet()) {
+            for (State destination: this.getData().get(state).get(symbol)) {
+                if (!group.contains(destination) && group.size() > 1) {                                                        
+                    return true;
+                }
+            }            
+        }
+        return false;
+    }
+    
+    /**
+     * Based on the results of k-equivalence, this helper method maps a state
+     * in the original DFA to a its equivalent state in the minimized DFA. 
+     * These states may be the same if the original state was unaffected by the
+     * minimization operation. 
+     * @param sortedGroups
+     * @return
+     */
+    private HashMap<State, State> getRedirect(HashSet<HashSet<State>> sortedGroups) {
+        var redirect = new HashMap<State, State>();
+        for (var group: sortedGroups) {
+            // If the original state was untouched, it can simply be added
+            //  into the minimized DFA.
+            if (group.size() == 1) {
+                State state = group.toArray(new State[1])[0];
+                redirect.put(state, state);              
+            }
+            // Otherwise, we must make a new state. 
+            else {
+                String aggStateName = "";
+                boolean aggStateAccepted = false;
+                for (var state: group) {
+                    aggStateName += state.getName();
+                    if (state.accept) {aggStateAccepted = true;}
+                }
+                var aggState = new State(aggStateName, aggStateAccepted);
+                // Now make all states in this group redirect to the aggregate 
+                //      state.
+                for (var state: group) {
+                    redirect.put(state, aggState);
+                }
+            }
+        } 
+        return redirect;
     }
     
     // Subclasses

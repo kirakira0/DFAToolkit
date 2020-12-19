@@ -216,7 +216,9 @@ public class NFATests {
         myNFA.addTransition(s1, new NFA.Transition('0', s0));
         myNFA.addTransition(s1, new NFA.Transition('1', s1));
         
+        System.out.println(myNFA.toString("Pre-Minimization 0"));
         NFA DFA = myNFA.minimize();
+        System.out.println(DFA.toString("Post-Minimization 0"));
         
         assertEquals(DFA.getData().get(s0).get('0'), new HashSet<>(Arrays.asList(s1)));
     }
@@ -236,7 +238,9 @@ public class NFATests {
         myNFA.addTransition(s1, new NFA.Transition('0', s0));
         myNFA.addTransition(s1, new NFA.Transition('1', s1));
         
+        System.out.println(myNFA.toString("Pre-Minimization 1"));
         NFA DFA = myNFA.minimize();
+        System.out.println(DFA.toString("Post-Minimization 1"));
         
         NFA expected = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
         NFA.State s0s1 = new NFA.State("s0s1", false);
@@ -275,7 +279,9 @@ public class NFATests {
         myNFA.addTransition(s4, new NFA.Transition('0', s4));
         myNFA.addTransition(s4, new NFA.Transition('1', s4));
         
+        System.out.println(myNFA.toString("Pre-Minimization 2"));
         NFA DFA = myNFA.minimize();
+        System.out.println(DFA.toString("Post-Minimization 2"));
         
         NFA expected = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
         NFA.State s1s2s3 = new NFA.State("s1s2s3", false);
