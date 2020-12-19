@@ -198,7 +198,7 @@ public class NFATests {
         expectedAnswer.add(new HashSet<State>(Arrays.asList(s0)));
         expectedAnswer.add(new HashSet<State>(Arrays.asList(s3, s1, s2)));
          
-        assertEquals(myNFA.kEquivalenceHelper(stateGroups), expectedAnswer);               
+        assertEquals(myNFA.kEquivalence(stateGroups), expectedAnswer);               
     }
     
     @Test

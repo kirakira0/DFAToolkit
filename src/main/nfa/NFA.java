@@ -1,35 +1,66 @@
 /**
- *
+ * This class describes an NFA and several useful methods for working with
+ * NFAs, including a method that determines whether or not an NFA is a DFA, 
+ * and a method capable of minimizing DFAs. 
  * @author Kira Toal
  */ 
 
 package main.nfa;
 
-import java.util.HashSet;
-
-import main.nfa.NFA.State;
-
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class NFA {
+    
+    // Fields
+    // ------------------------------------------------------------------------
 
     private HashSet<Character> alphabet; 
-    private HashMap<State, HashMap<Character, HashSet<State>>> data; 
-
-
-    public NFA(HashSet<Character> alphabet, HashMap<State, HashMap<Character, HashSet<State>>> data) {
+    private HashMap<State, HashMap<Character, HashSet<State>>> data;
+    
+    // Constructor
+    // ------------------------------------------------------------------------
+    
+    public NFA(HashSet<Character> alphabet, HashMap<State, HashMap<Character, 
+            HashSet<State>>> data) {
         this.alphabet = alphabet;
         this.data = data;
     }
     
+    // Getters
+    // ------------------------------------------------------------------------
+    
+    public HashMap<State, HashMap<Character, HashSet<State>>> getData() {
+        return data;
+    }
+
+    public HashSet<Character> getAlphabet() {
+        return alphabet;
+    }
+    
+    // Methods
+    // ------------------------------------------------------------------------
+    
+    /**
+     * Adds a state to the NFA as long as there is not already a state with the
+     * same name and acceptance value.
+     * @param state The state to add.
+     */
     public void addState(State state) {
         if (!this.getData().containsKey(state)) {
             this.getData().put(state, new HashMap<Character, HashSet<State>>());         
         }
-    }
+    }   
     
-    
+    /**
+     * Adds a transition to the NFA as long as it there does not already exist
+     * a transition that uses the specified symbol.
+     * @param state The state to add the transition to (the start state of the
+     *      transition.)
+     * @param transition The transition itself, which consists of a symbol and 
+     *      a destination.
+     */
     public void addTransition(State state, Transition transition) {
         // Ensure symbol in alphabet. 
         if (!this.getAlphabet().contains(transition.symbol)) {
@@ -41,7 +72,8 @@ public class NFA {
         }
         // Add new transition. 
         if (!this.getData().get(state).containsKey(transition.symbol)) {
-            this.getData().get(state).put(transition.symbol, new HashSet<State>(Arrays.asList(transition.dest)));
+            this.getData().get(state).put(transition.symbol, 
+                    new HashSet<State>(Arrays.asList(transition.dest)));
         }
         // Add state to transition.
         else {
@@ -52,7 +84,6 @@ public class NFA {
             HashSet<State> oldStatesSet = this.getData().get(state).get(transition.symbol);
             oldStatesSet.add(transition.dest);         
         }                  
-
     }
     
     /**
@@ -86,25 +117,14 @@ public class NFA {
     }
     
     /**
-     * 
+     * Minimizes a DFA using the k-equivalence method.
      */
     public NFA minimize() {
         if (!this.isDFA()) {
             throw new IllegalArgumentException("Cannot minimize NFA. Try converting to DFA first.");
         }
         
-        // K equivalence 
-        var stateGroups = new HashSet<HashSet<State>>();
-        var acceptStates = new HashSet<State>();
-        var nonAcceptStates = new HashSet<State>();
-        for (State state: this.getData().keySet()) {
-            if (state.accept)  {acceptStates.add(state);} 
-            else {nonAcceptStates.add(state);}
-        }
-        stateGroups.add(acceptStates);
-        stateGroups.add(nonAcceptStates);
-        
-        var sortedGroups = this.kEquivalenceHelper(stateGroups); 
+        var sortedGroups = this.kEquivalence(this.getK0()); 
         this.printStateGroup(sortedGroups);
         
         NFA DFA = new NFA(this.getAlphabet(), new HashMap<State, HashMap<Character, HashSet<State>>>());
@@ -131,7 +151,7 @@ public class NFA {
                 }
             }
         }
-        DFA.toString();
+        DFA.toString("DFA");
 
         
         // Build a minimized DFA based on data from the original DFA and the 
@@ -152,52 +172,7 @@ public class NFA {
         return DFA;      
 
     }
-
     
-    /**
-     * Sort the states of the DFA into groups using the k equivalence method. 
-     * @param stateGroups The states should originally be split into two groups:
-     *      one for the accept states and one for the non-accept states. 
-     * @return The correct sorting of the groups. 
-     */
-    public HashSet<HashSet<State>> kEquivalenceHelper(HashSet<HashSet<State>> stateGroups) {
-        var newGroups = new HashSet<HashSet<State>>();
-        for (var group: stateGroups) {
-            var keep = new HashSet<State>();
-            var leave = new HashSet<State>();
-            for (var state: group) {
-                if (this.stateExits(state, group)) {
-                    leave.add(state);
-                } else {
-                    keep.add(state);
-                }
-            }
-            if (!leave.isEmpty()) {
-                newGroups.add(leave);
-            }
-            if (!keep.isEmpty()) {
-                newGroups.add(keep);
-            }
-        }
-        // this.printStateGroup(newGroups);
-        return stateGroups.equals(newGroups) ? newGroups : this.kEquivalenceHelper(newGroups);       
-    }
-    
-    /**
-     * 
-     * @param groups
-     */
-    private void printStateGroup(HashSet<HashSet<State>> groups) {
-        String result = "Groups: ";
-        for (HashSet<State> group: groups) {
-            result += "[ ";
-            for (State state: group) {
-                result += " " + state.getName() + " ";
-            }
-            result += " ]";
-        }
-        System.out.println(result);       
-    }
     
     /**
      * 
@@ -216,9 +191,28 @@ public class NFA {
         return false;
     }
     
-    @Override 
-    public String toString() {
-        String result = "----------------NFA-------------------";
+
+    
+    /**
+     * 
+     */
+    private String transitionSetToString(HashSet<State> states) {
+        String result = ""; 
+        for (State state: states) {
+            result += " " + state.getName();           
+        }
+        return result;
+    } 
+    
+    // General helper methods
+    // ------------------------------------------------------------------------
+
+    /**
+     * Helper method that prints a visual representation of the NFA in the
+     * console.
+     */
+    public String toString(String title) {
+        String result = "----------------" + title + "-------------------";
         for (State state: this.getData().keySet()) {
             System.out.println();
             result += "\n" + state.getName() + "\t"; 
@@ -231,27 +225,84 @@ public class NFA {
     }
     
     /**
-     * 
+     * Prints the k-equivalence groups. This method is useful when
+     * working with the minimize() method to see a play-by-play of how
+     * it breaks down the states into groups. 
+     * Ex: " Groups: [ s0 ] [ s1 ]"
+     * Ex2: " Groups: [ s1 s2 s3 ] [ s4 ] [ s0 ]"
+     * @param groups
      */
-    private String transitionSetToString(HashSet<State> states) {
-        String result = ""; 
-        for (State state: states) {
-            result += " " + state.getName();           
+    private void printStateGroup(HashSet<HashSet<State>> groups) {
+        String result = "Groups: ";
+        for (HashSet<State> group: groups) {
+            result += "[ ";
+            for (State state: group) {
+                result += " " + state.getName() + " ";
+            }
+            result += " ]";
         }
-        return result;
-    } 
-          
-    public HashMap<State, HashMap<Character, HashSet<State>>> getData() {
-        return data;
+        System.out.println(result);       
     }
+    
+    // Helper methods specific to DFA minimization
+    // ------------------------------------------------------------------------
 
-    public HashSet<Character> getAlphabet() {
-        return alphabet;
+    /**
+     * Sorts the states of the DFA into groups using the k equivalence method. 
+     * @param stateGroups The states should originally be split into two groups:
+     *      one for the accept states and one for the non-accept states. 
+     * @return The correct sorting of the groups. 
+     */
+    public HashSet<HashSet<State>> kEquivalence(HashSet<HashSet<State>> stateGroups) {
+        var newGroups = new HashSet<HashSet<State>>();
+        for (var group: stateGroups) {
+            var keep = new HashSet<State>();
+            var leave = new HashSet<State>();
+            for (var state: group) {
+                if (this.stateExits(state, group)) {
+                    leave.add(state);
+                } else {
+                    keep.add(state);
+                }
+            }
+            if (!leave.isEmpty()) {
+                newGroups.add(leave);
+            }
+            if (!keep.isEmpty()) {
+                newGroups.add(keep);
+            }
+        }
+        return stateGroups.equals(newGroups) ? newGroups : this.kEquivalence(newGroups);       
     }
 
     /**
-     * 
-     *
+     * Helper method used by minimize() to break the DFA states down into
+     * two groups: one including all accept states and the other including
+     * all non-accept states. This method provides a necessary starting point
+     * for the recursive kEquivalence() method. 
+     * @return
+     */
+    private HashSet<HashSet<State>> getK0() {
+        // K equivalence 
+        var stateGroups = new HashSet<HashSet<State>>();
+        var acceptStates = new HashSet<State>();
+        var nonAcceptStates = new HashSet<State>();
+        for (State state: this.getData().keySet()) {
+            if (state.accept)  {acceptStates.add(state);} 
+            else {nonAcceptStates.add(state);}
+        }
+        stateGroups.add(acceptStates);
+        stateGroups.add(nonAcceptStates);
+        return stateGroups;
+    }
+    
+    // Subclasses
+    // ------------------------------------------------------------------------
+
+    /**
+     * The State subclass defines a State object. States include a name and an 
+     * accept value (which may be true or false.) States are useful for keeping
+     * track of the values in the NFA.data HashMap.
      */
     public static class State {
 
@@ -269,8 +320,9 @@ public class NFA {
     }
     
     /**
-     * 
-     *
+     * The Transition subclass defines a Transition object. Transitions include
+     * a symbol Character and a destination State. Transitions are useful for 
+     * storing information about the relationship between each state in the NFA.
      */
     public static class Transition {
         
