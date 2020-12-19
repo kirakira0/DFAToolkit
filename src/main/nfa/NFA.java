@@ -24,10 +24,10 @@ public class NFA {
     }
     
     public void addState(State state) {
-        if (this.data.containsKey(state)) {
+        if (this.getData().containsKey(state)) {
             throw new IllegalArgumentException("State already exists."); 
         }
-        this.data.put(state, new HashMap<Character, HashSet<State>>());         
+        this.getData().put(state, new HashMap<Character, HashSet<State>>());         
     }
     
     
@@ -37,20 +37,20 @@ public class NFA {
             throw new IllegalArgumentException("Transition symbol not in alphabet.");                         
         }
         // Ensure state in NFA. 
-        if (!this.data.containsKey(state)) {
+        if (!this.getData().containsKey(state)) {
             throw new IllegalArgumentException("Cannot add tranistion to nonexistant state.");             
         }
         // Add new transition. 
-        if (!this.data.get(state).containsKey(transition.symbol)) {
-            this.data.get(state).put(transition.symbol, new HashSet<State>(Arrays.asList(transition.dest)));
+        if (!this.getData().get(state).containsKey(transition.symbol)) {
+            this.getData().get(state).put(transition.symbol, new HashSet<State>(Arrays.asList(transition.dest)));
         }
         // Add state to transition.
         else {
             // Do not add duplicate transition. 
-            if (this.data.get(state).get(transition.symbol).contains(transition.dest)) {
+            if (this.getData().get(state).get(transition.symbol).contains(transition.dest)) {
                 return;
             }
-            HashSet<State> oldStatesSet = this.data.get(state).get(transition.symbol);
+            HashSet<State> oldStatesSet = this.getData().get(state).get(transition.symbol);
             oldStatesSet.add(transition.dest);         
         }                  
 
@@ -67,18 +67,18 @@ public class NFA {
     public boolean isDFA() {
         // Condition 1: DFA cannot use lambda moves. 
         if (this.alphabet.contains('λ')) {return false;}
-        for (State state: this.data.keySet()) {
+        for (State state: this.getData().keySet()) {
             for (Character c: this.alphabet) {
                 // Condition 2: DFA must have transition for every char
                 //  in the alphabet. 
-                if (!this.data.get(state).keySet().contains(c)) {
+                if (!this.getData().get(state).keySet().contains(c)) {
                     return false; 
                 }
             }
-            for (Character symbol: this.data.get(state).keySet()) {
+            for (Character symbol: this.getData().get(state).keySet()) {
                  // Condition 3: Each transition symbol must have only one 
                  //   destination state.
-                 if (this.data.get(state).get(symbol).size() > 1) {
+                 if (this.getData().get(state).get(symbol).size() > 1) {
                      return false;
                  }         
              }                   
@@ -94,7 +94,7 @@ public class NFA {
         var stateGroups = new HashSet<HashSet<State>>();
         var acceptStates = new HashSet<State>();
         var nonAcceptStates = new HashSet<State>();
-        for (State state: this.data.keySet()) {
+        for (State state: this.getData().keySet()) {
             if (state.accept)  {acceptStates.add(state);} 
             else {nonAcceptStates.add(state);}
         }
@@ -102,10 +102,38 @@ public class NFA {
         stateGroups.add(nonAcceptStates);
         
         var sortedGroups = this.kEquivalenceHelper(stateGroups); 
+        this.printStateGroup(sortedGroups);
         
         NFA DFA = new NFA(this.alphabet, new HashMap<State, HashMap<Character, HashSet<State>>>());
-        for (var group: stateGroups) {
+        var redirect = new HashMap<State, State>();
+        for (var group: sortedGroups) {
+            // If the original state was untouched, it can simply be added
+            //  into the minimized DFA.
+            if (group.size() == 1) {
+                State state = group.toArray(new State[1])[0];
+                redirect.put(state, state);              
+            }
+            // Otherwise, we must make a new state. 
+            else {
+                
+            }
+        }
+        DFA.toString();
+
+        
+        // Build a minimized DFA based on data from the original DFA and the 
+        //      state redirects. 
+        for (var state: this.getData().keySet()) { // Iterate through original DFA.
+            State stateToAdd = redirect.get(state);
+            DFA.addState(stateToAdd);
             
+            // Now add the transitions
+            for (var symbol: this.getData().get(state).keySet()) {
+                // original transition is 
+                State oldDest = this.getData().get(state).get(symbol).toArray(new State[1])[0]; 
+                State newDest = redirect.get(oldDest); 
+                DFA.addTransition(stateToAdd, new Transition(symbol, newDest));
+            }
         }
 
         return DFA;      
@@ -165,8 +193,8 @@ public class NFA {
      * @return
      */
     private boolean stateExits(State state, HashSet<State> group) {
-        for (Character symbol: this.data.get(state).keySet()) {
-            for (State destination: this.data.get(state).get(symbol)) {
+        for (Character symbol: this.getData().get(state).keySet()) {
+            for (State destination: this.getData().get(state).get(symbol)) {
                 if (!group.contains(destination) && group.size() > 1) {                                                        
                     return true;
                 }
@@ -187,11 +215,11 @@ public class NFA {
     @Override 
     public String toString() {
         String result = "----------------NFA-------------------";
-        for (State state: this.data.keySet()) {
+        for (State state: this.getData().keySet()) {
             System.out.println();
             result += "\n" + state.name + "\t"; 
-            for (Character symbol: this.data.get(state).keySet()) {
-                result += "[" + symbol + ":" + this.transitionSetToString(this.data.get(state).get(symbol)) + "]";
+            for (Character symbol: this.getData().get(state).keySet()) {
+                result += "[" + symbol + ":" + this.transitionSetToString(this.getData().get(state).get(symbol)) + "]";
             }   
         }        
         result += "\n" + "--------------------------------------";
@@ -209,6 +237,10 @@ public class NFA {
         return result;
     } 
           
+    public HashMap<State, HashMap<Character, HashSet<State>>> getData() {
+        return data;
+    }
+
     /**
      * 
      *

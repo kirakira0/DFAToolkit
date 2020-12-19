@@ -201,6 +201,26 @@ public class NFATests {
         assertEquals(myNFA.kEquivalenceHelper(stateGroups), expectedAnswer);               
     }
     
+    @Test
+    public void testMinimize_t0() {
+        // Test minimize() method on already minimized DFA.
+        NFA myNFA = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA.State s0 = new NFA.State("s0", false);
+        NFA.State s1 = new NFA.State("s1", true);
+        
+        myNFA.addState(s0);
+        myNFA.addState(s1);
+        
+        myNFA.addTransition(s0, new NFA.Transition('0', s1));
+        myNFA.addTransition(s0, new NFA.Transition('1', s0));
+        myNFA.addTransition(s1, new NFA.Transition('0', s0));
+        myNFA.addTransition(s1, new NFA.Transition('1', s1));
+        
+        NFA DFA = myNFA.minimize();
+        
+        assertEquals(DFA.getData().get(s0).get('0'), new HashSet<>(Arrays.asList(s1)));
+    }
+    
     
 }
 
