@@ -24,16 +24,15 @@ public class NFA {
     }
     
     public void addState(State state) {
-        if (this.getData().containsKey(state)) {
-            throw new IllegalArgumentException("State already exists."); 
+        if (!this.getData().containsKey(state)) {
+            this.getData().put(state, new HashMap<Character, HashSet<State>>());         
         }
-        this.getData().put(state, new HashMap<Character, HashSet<State>>());         
     }
     
     
     public void addTransition(State state, Transition transition) {
         // Ensure symbol in alphabet. 
-        if (!this.alphabet.contains(transition.symbol)) {
+        if (!this.getAlphabet().contains(transition.symbol)) {
             throw new IllegalArgumentException("Transition symbol not in alphabet.");                         
         }
         // Ensure state in NFA. 
@@ -66,9 +65,9 @@ public class NFA {
      */
     public boolean isDFA() {
         // Condition 1: DFA cannot use lambda moves. 
-        if (this.alphabet.contains('λ')) {return false;}
+        if (this.getAlphabet().contains('λ')) {return false;}
         for (State state: this.getData().keySet()) {
-            for (Character c: this.alphabet) {
+            for (Character c: this.getAlphabet()) {
                 // Condition 2: DFA must have transition for every char
                 //  in the alphabet. 
                 if (!this.getData().get(state).keySet().contains(c)) {
@@ -90,6 +89,10 @@ public class NFA {
      * 
      */
     public NFA minimize() {
+        if (!this.isDFA()) {
+            throw new IllegalArgumentException("Cannot minimize NFA. Try converting to DFA first.");
+        }
+        
         // K equivalence 
         var stateGroups = new HashSet<HashSet<State>>();
         var acceptStates = new HashSet<State>();
@@ -104,7 +107,7 @@ public class NFA {
         var sortedGroups = this.kEquivalenceHelper(stateGroups); 
         this.printStateGroup(sortedGroups);
         
-        NFA DFA = new NFA(this.alphabet, new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA DFA = new NFA(this.getAlphabet(), new HashMap<State, HashMap<Character, HashSet<State>>>());
         var redirect = new HashMap<State, State>();
         for (var group: sortedGroups) {
             // If the original state was untouched, it can simply be added
@@ -115,7 +118,17 @@ public class NFA {
             }
             // Otherwise, we must make a new state. 
             else {
-                
+                String aggStateName = "";
+                boolean aggStateAccepted = false;
+                for (var state: group) {
+                    aggStateName += state.getName();
+                    if (state.accept) {aggStateAccepted = true;}
+                }
+                var aggState = new State(aggStateName, aggStateAccepted);
+                // Now make all states in this group redirect to the aggregate state.
+                for (var state: group) {
+                    redirect.put(state, aggState);
+                }
             }
         }
         DFA.toString();
@@ -179,7 +192,7 @@ public class NFA {
         for (HashSet<State> group: groups) {
             result += "[ ";
             for (State state: group) {
-                result += " " + state.name + " ";
+                result += " " + state.getName() + " ";
             }
             result += " ]";
         }
@@ -203,21 +216,12 @@ public class NFA {
         return false;
     }
     
-    
-    
-    // METHOD TO COMBINE STATESET INTO SINGLE STATE
-//    public DFA constructMinimizedDFA() {
-//        
-//        
-//    }
-    
-    
     @Override 
     public String toString() {
         String result = "----------------NFA-------------------";
         for (State state: this.getData().keySet()) {
             System.out.println();
-            result += "\n" + state.name + "\t"; 
+            result += "\n" + state.getName() + "\t"; 
             for (Character symbol: this.getData().get(state).keySet()) {
                 result += "[" + symbol + ":" + this.transitionSetToString(this.getData().get(state).get(symbol)) + "]";
             }   
@@ -232,13 +236,17 @@ public class NFA {
     private String transitionSetToString(HashSet<State> states) {
         String result = ""; 
         for (State state: states) {
-            result += " " + state.name;           
+            result += " " + state.getName();           
         }
         return result;
     } 
           
     public HashMap<State, HashMap<Character, HashSet<State>>> getData() {
         return data;
+    }
+
+    public HashSet<Character> getAlphabet() {
+        return alphabet;
     }
 
     /**
@@ -253,6 +261,10 @@ public class NFA {
         public State(String name, boolean accept) {
             this.name = name;
             this.accept = accept;
+        }
+
+        public String getName() {
+            return name;
         }        
     }
     

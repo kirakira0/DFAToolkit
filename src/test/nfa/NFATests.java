@@ -221,6 +221,85 @@ public class NFATests {
         assertEquals(DFA.getData().get(s0).get('0'), new HashSet<>(Arrays.asList(s1)));
     }
     
-    
+    @Test
+    public void testMinimize_t1() {
+        // Test minimize() method on non minimized DFA.
+        NFA myNFA = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA.State s0 = new NFA.State("s0", false);
+        NFA.State s1 = new NFA.State("s1", false);
+        
+        myNFA.addState(s0);
+        myNFA.addState(s1);
+        
+        myNFA.addTransition(s0, new NFA.Transition('0', s1));
+        myNFA.addTransition(s0, new NFA.Transition('1', s0));
+        myNFA.addTransition(s1, new NFA.Transition('0', s0));
+        myNFA.addTransition(s1, new NFA.Transition('1', s1));
+        
+        NFA DFA = myNFA.minimize();
+        
+        NFA expected = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA.State s0s1 = new NFA.State("s0s1", false);
+        expected.addState(s0s1);
+        expected.addTransition(s0s1, new NFA.Transition('0', s0s1));
+        expected.addTransition(s0s1, new NFA.Transition('1', s0s1));
+        
+        assertEquals(DFA.getAlphabet(), expected.getAlphabet());
+        assertEquals(DFA.getData().size(), expected.getData().size());
+    }
+
+    @Test
+    public void testMinimize_t2() {
+        // Test minimize() method on more complex DFA.
+        NFA myNFA = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA.State s0 = new NFA.State("s0", false);
+        NFA.State s1 = new NFA.State("s1", false);
+        NFA.State s2 = new NFA.State("s2", false);
+        NFA.State s3 = new NFA.State("s3", false);
+        NFA.State s4 = new NFA.State("s4", true);
+        
+        myNFA.addState(s0);
+        myNFA.addState(s1);
+        myNFA.addState(s2);
+        myNFA.addState(s3);
+        myNFA.addState(s4);
+        
+        myNFA.addTransition(s0, new NFA.Transition('0', s1));
+        myNFA.addTransition(s0, new NFA.Transition('1', s3));
+        myNFA.addTransition(s1, new NFA.Transition('0', s2));
+        myNFA.addTransition(s1, new NFA.Transition('1', s4));
+        myNFA.addTransition(s2, new NFA.Transition('0', s1));
+        myNFA.addTransition(s2, new NFA.Transition('1', s4));
+        myNFA.addTransition(s3, new NFA.Transition('0', s2));
+        myNFA.addTransition(s3, new NFA.Transition('1', s4));
+        myNFA.addTransition(s4, new NFA.Transition('0', s4));
+        myNFA.addTransition(s4, new NFA.Transition('1', s4));
+        
+        NFA DFA = myNFA.minimize();
+        
+        NFA expected = new NFA(new HashSet<>(Arrays.asList('0', '1')), new HashMap<State, HashMap<Character, HashSet<State>>>());
+        NFA.State s1s2s3 = new NFA.State("s1s2s3", false);
+
+        expected.addState(s0);
+        expected.addState(s1s2s3);
+        expected.addState(s4);
+
+        expected.addTransition(s0, new NFA.Transition('0', s1s2s3));
+        expected.addTransition(s0, new NFA.Transition('1', s1s2s3));
+        expected.addTransition(s1s2s3, new NFA.Transition('0', s1s2s3));
+        expected.addTransition(s1s2s3, new NFA.Transition('1', s4));
+        expected.addTransition(s4, new NFA.Transition('0', s4));
+        expected.addTransition(s4, new NFA.Transition('1', s4));
+        
+        assertEquals(DFA.getAlphabet(), expected.getAlphabet());
+        assertEquals(DFA.getData().size(), expected.getData().size());
+        
+        for (var state: DFA.getData().keySet()) {
+            if (state.getName().equals("s4")) {
+                assertEquals(DFA.getData().get(state).get('0').toArray(new State[1])[0].getName(), "s4");
+                assertEquals(DFA.getData().get(state).get('1').toArray(new State[1])[0].getName(), "s4");
+            }
+        }
+    }   
 }
 
